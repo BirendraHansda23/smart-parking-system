@@ -1,0 +1,295 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Parking Slot Status</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        text-align: center;
+        background-color: #f4f4f4;
+        margin: 0;
+        padding: 20px;
+      }
+      h1 {
+        margin-bottom: 20px;
+      }
+      h2 {
+        margin-top: 40px;
+        margin-bottom: 15px;
+        color: #333;
+      }
+      .slot-container {
+        display: flex;
+        justify-content: center;
+        gap: 20px;
+        flex-wrap: wrap;
+        margin-bottom: 20px;
+      }
+      .slot {
+        width: 150px;
+        height: 200px;
+        border: 2px solid #333;
+        border-radius: 10px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        color: white;
+        font-size: 18px;
+        font-weight: bold;
+        text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.5);
+        transition: background-color 0.5s ease; /* Smooth transition */
+      }
+      .available {
+        background-color: green;
+      }
+      .occupied {
+        background-color: red;
+      }
+      .slot-number {
+        font-size: 24px;
+        margin-bottom: 10px;
+      }
+      .slot-status {
+        font-size: 20px;
+      }
+
+      /* Log table styles */
+      .log-section {
+        max-width: 800px;
+        margin: 0 auto;
+        background-color: white;
+        border-radius: 10px;
+        box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+        padding: 15px;
+      }
+      .log-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 15px;
+        padding: 0 10px;
+      }
+      .refresh-button {
+        background-color: #4caf50;
+        color: white;
+        border: none;
+        padding: 8px 15px;
+        border-radius: 5px;
+        cursor: pointer;
+        font-weight: bold;
+        transition: all 0.3s;
+      }
+      .refresh-button:hover {
+        background-color: #45a049;
+        transform: scale(1.05);
+      }
+      .log-table-container {
+        max-height: 400px;
+        overflow-y: auto;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+      th {
+        background-color: #f2f2f2;
+        color: #333;
+        font-weight: bold;
+        text-align: left;
+        padding: 12px;
+        position: sticky;
+        top: 0;
+        z-index: 1;
+        border-bottom: 2px solid #ddd;
+      }
+      td {
+        padding: 10px 12px;
+        border-bottom: 1px solid #eee;
+        text-align: left;
+      }
+      tr:hover {
+        background-color: #f9f9f9;
+      }
+      .empty-log {
+        text-align: center;
+        padding: 20px;
+        color: #777;
+      }
+      .status-occupied {
+        color: #d9534f;
+        font-weight: bold;
+      }
+      .status-available {
+        color: #5cb85c;
+        font-weight: bold;
+      }
+
+      /* Responsive adjustments */
+      @media (max-width: 768px) {
+        .slot-container {
+          flex-direction: column;
+          align-items: center;
+        }
+        .slot {
+          width: 80%;
+          max-width: 200px;
+          height: 150px;
+          margin-bottom: 15px;
+        }
+        .log-section {
+          padding: 10px;
+        }
+        th,
+        td {
+          padding: 8px;
+          font-size: 14px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Parking Slot Status</h1>
+    <div class="slot-container">
+      <div class="slot" id="slot-1">
+        <div class="slot-number">Slot 1</div>
+        <div class="slot-status" id="status-1">Loading...</div>
+      </div>
+      <div class="slot" id="slot-2">
+        <div class="slot-number">Slot 2</div>
+        <div class="slot-status" id="status-2">Loading...</div>
+      </div>
+      <div class="slot" id="slot-3">
+        <div class="slot-number">Slot 3</div>
+        <div class="slot-status" id="status-3">Loading...</div>
+      </div>
+    </div>
+
+    <h2>Activity Log</h2>
+    <div class="log-section">
+      <div class="log-header">
+        <span>Recent status changes</span>
+        <button id="refresh-logs" class="refresh-button">Refresh Log</button>
+      </div>
+      <div class="log-table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Slot</th>
+              <th>Status</th>
+              <th>Date</th>
+              <th>Time</th>
+            </tr>
+          </thead>
+          <tbody id="log-body">
+            <tr>
+              <td colspan="4" class="empty-log">Loading activity logs...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <script>
+      // Update the parking slot status
+      function updateSlotStatus() {
+        fetch("/api/sensor-data?" + new Date().getTime()) // Prevent caching
+          .then((response) => response.json())
+          .then((data) => {
+            for (let i = 1; i <= 3; i++) {
+              const slotElement = document.getElementById(`slot-${i}`);
+              const statusElement = document.getElementById(`status-${i}`);
+              const isOccupied = data[`slot_${i}`];
+
+              slotElement.className = `slot ${isOccupied ? "occupied" : "available"}`;
+              statusElement.textContent = isOccupied ? "Occupied" : "Available";
+            }
+          })
+          .catch((error) => {
+            console.error("Error fetching sensor data:", error);
+          });
+      }
+
+      // Format the timestamp for display
+      function formatTimestamp(timestamp) {
+        const date = new Date(timestamp);
+
+        // Format date as YYYY-MM-DD
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, "0");
+        const day = String(date.getDate()).padStart(2, "0");
+        const dateStr = `${year}-${month}-${day}`;
+
+        // Format time as HH:MM:SS
+        const hours = String(date.getHours()).padStart(2, "0");
+        const minutes = String(date.getMinutes()).padStart(2, "0");
+        const seconds = String(date.getSeconds()).padStart(2, "0");
+        const timeStr = `${hours}:${minutes}:${seconds}`;
+
+        return { date: dateStr, time: timeStr };
+      }
+
+      // Fetch and display the activity logs
+      function updateActivityLog() {
+        fetch("/api/logs?" + new Date().getTime())
+          .then((response) => response.json())
+          .then((logs) => {
+            const logBody = document.getElementById("log-body");
+
+            if (!logs || logs.length === 0) {
+              logBody.innerHTML = `
+                <tr>
+                  <td colspan="4" class="empty-log">No activity recorded yet</td>
+                </tr>
+              `;
+              return;
+            }
+
+            logBody.innerHTML = "";
+
+            logs.forEach((log) => {
+              const { date, time } = formatTimestamp(log.timestamp);
+              const slotName = log.slot_id.replace("_", " ");
+              const slotDisplay =
+                slotName.charAt(0).toUpperCase() + slotName.slice(1);
+              const statusClass = `status-${log.status.toLowerCase()}`;
+
+              logBody.innerHTML += `
+                <tr>
+                  <td>${slotDisplay}</td>
+                  <td class="${statusClass}">${log.status}</td>
+                  <td>${date}</td>
+                  <td>${time}</td>
+                </tr>
+              `;
+            });
+          })
+          .catch((error) => {
+            console.error("Error fetching activity logs:", error);
+            document.getElementById("log-body").innerHTML = `
+              <tr>
+                <td colspan="4" class="empty-log">Error loading logs. Please try again.</td>
+              </tr>
+            `;
+          });
+      }
+
+      // Set up automatic refreshes
+      setInterval(updateSlotStatus, 1000);
+      setInterval(updateActivityLog, 5000);
+
+      // Initial load
+      updateSlotStatus();
+      updateActivityLog();
+
+      // Manual refresh button
+      document
+        .getElementById("refresh-logs")
+        .addEventListener("click", updateActivityLog);
+    </script>
+  </body>
+</html>
